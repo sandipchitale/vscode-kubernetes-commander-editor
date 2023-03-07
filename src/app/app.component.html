@@ -1,0 +1,359 @@
+<div class="wrapper">
+  <p-toolbar [style]="{ 'border-top': '1px solid var(--vscode-editorGroup-border)' }">
+    <div class="p-toolbar-group-left" style="flex: 1 1 auto">
+      <div class="p-text-bold">Kubeconfig:</div>
+      <div class="ml-2">
+        <input type="text" pInputText [(ngModel)]="kubeconfig" [disabled]="true"/>
+      </div>
+      <p-button
+        pTooltip="Edit Kubeconfig"
+        icon="pi pi-pencil"
+        styleClass="ml-2 p-button-link"
+        (click)="editKubeconfig()">
+      </p-button>
+      <p-button
+        pTooltip="Edit Kubeconfigs"
+        icon="pi pi-ellipsis-v"
+        styleClass="ml-2 p-button-link"
+        (click)="editKubeconfigs()">
+      </p-button>
+    </div>
+    <div class="p-toolbar-group-right" style="flex: 1 1 auto">
+      <div class="ml-auto p-text-bold">Context:</div>
+      <div class="ml-2">
+        <p-dropdown
+          [options]="contexts"
+          [(ngModel)]="selectedContext"
+          optionLabel="name"
+          [tooltip]="'Cluster:' + selectedContext?.clusterName"
+          [style]="{ 'width': '200px'}">
+        </p-dropdown>
+      </div>
+      <div class="ml-2 p-text-bold" title="{{ selectedNamespace | json }}">Namespace:</div>
+      <div class="ml-2">
+        <p-dropdown
+          [options]="namespaces"
+          [(ngModel)]="selectedNamespace"
+          optionLabel="name"
+          [style]="{ 'width': '300px'}"
+          (onChange)="switchNamespace($event)">
+        </p-dropdown>
+      </div>
+    </div>
+  </p-toolbar>
+  <p-toolbar [style]="{ 'border-bottom': '1px solid var(--vscode-editorGroup-border)' }">
+    <div class="p-toolbar-group-left" style="flex: 1 1 auto">
+      <div class="ml-2 p-text-bold">Client Version:</div>
+      <div >{{clientVersion}}</div>
+      <div class="mx-4 p-text-bold">|</div>
+      <div class="p-text-bold">Server Version:</div>
+      <div class="ml-2">{{serverVersion}}</div>
+    </div>
+    <div class="p-toolbar-group-right" style="flex: 1 1 auto">
+      <div class="ml-auto p-text-bold" title="{{ showFromNamespaces | json }}">From:</div>
+      <div class="ml-2">
+        <p-checkbox
+          inputId="all-namespaces"
+          [(ngModel)]="allNamespaces"
+          [binary]="true"
+          label="All Namespaces"
+          (onChange)="allNamespacesChanged()">
+        </p-checkbox>
+      </div>
+      <div class="mx-4 p-text-bold">|</div>
+      <div>Selected Namespaces:</div>
+      <div class="ml-2">
+        <p-multiSelect
+          [options]="namespaces"
+          [(ngModel)]="showFromNamespaces"
+          optionLabel="name"
+          [style]="{ 'width': '300px'}"
+          [panelStyle]="{ 'width': '298px'}"
+          (onChange)="showFromNamespacesDidChange = true"
+          (onPanelHide)="showFromNamespacesChanged()"
+          [disabled]="allNamespaces">
+        </p-multiSelect>
+      </div>
+    </div>
+  </p-toolbar>
+  <main>
+    <p-table
+      #resourceTypeTable
+      [value]="resourceTypes"
+      dataKey="name"
+      selectionMode="single"
+      [(selection)]="selectedResourceTypes"
+      rowExpandMode="single"
+      (onRowExpand)="rowExpanded($event)"
+      (onRowCollapse)="rowCollapsed($event)"
+      styleClass="p-datatable-sm"
+      responsiveLayout="scroll"
+      [scrollable]="true"
+      scrollHeight="flex"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries">
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td class="justify-content-center" style="width: 4rem">&nbsp;</td>
+          <td colspan="5">No Resource Types.</td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="header">
+        <tr>
+          <th class="justify-content-center" style="width: 4rem">&nbsp;</th>
+          <th pSortableColumn="name" class="pl-3">
+            <div class="flex align-items-center">
+              <div>API Resoource</div><p-sortIcon field="name"></p-sortIcon>
+            </div>
+          </th>
+          <th pSortableColumn="shortName">Short Name <p-sortIcon field="shortName"></p-sortIcon></th>
+          <th pSortableColumn="api">API Version <p-sortIcon field="api"></p-sortIcon></th>
+          <th pSortableColumn="namespaced" class="justify-content-center" style="width: 60px;" title="Namespaced"><i class="pi pi-id-card"></i> <p-sortIcon field="namespaced"></p-sortIcon></th>
+          <th pSortableColumn="kind" >Kind <p-sortIcon field="kind"></p-sortIcon></th>
+          <th style="width: 132px;">
+            <div class="flex justify-content-center align-items-center">
+              <p-toggleButton [onIcon]="'pi pi-filter-slash'" [offIcon]="'pi pi-filter'" [(ngModel)]="showFilters"></p-toggleButton>
+            </div>
+          </th>
+        </tr>
+        <tr *ngIf="showFilters">
+          <th class="justify-content-center" style="width: 4rem"></th>
+          <th class="pl-3">
+            <div class="flex justify-content-between align-items-center" style="width: 100%;">
+              <p-columnFilter type="text" matchMode="contains" field="name" [attr.style]="'width: 100%;'"></p-columnFilter>
+            </div>
+          </th>
+          <th>
+            <div class="flex justify-content-between align-items-center" style="width: 100%;">
+              <p-columnFilter type="text" matchMode="contains" field="shortName" [attr.style]="'width: 100%;'"></p-columnFilter>
+            </div>
+          </th>
+          <th>
+            <div class="flex justify-content-between align-items-center" style="width: 100%;">
+              <p-columnFilter type="text" matchMode="contains" field="api" [attr.style]="'width: 100%;'"></p-columnFilter>
+            </div>
+          </th>
+          <th class="justify-content-center" style="width: 60px;">&nbsp;</th>
+          <th>
+            <div class="flex justify-content-between align-items-center" style="width: 100%;">
+              <p-columnFilter type="text" matchMode="contains" field="kind" [attr.style]="'width: 100%;'"></p-columnFilter>
+            </div>
+          </th>
+          <th class="justify-content-center" style="width: 132px;">&nbsp;</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-resourceType let-expanded="expanded">
+        <tr>
+          <td class="justify-content-center" style="width: 4rem">
+            <button
+              type="button"
+              pButton
+              [pRowToggler]="resourceType"
+              class="p-button-text p-button-rounded p-button-plain"
+              [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'">
+            </button>
+          </td>
+          <td class="pl-3">
+            <div class="flex">
+              <img class="mr-2 k8s-icon" height="20" width="21" [attr.src]="resourceIconPath(resourceType)">
+              <span>{{ resourceType.name }}</span>
+            </div>
+          </td>
+          <td>{{ resourceType.shortName }}</td>
+          <td>{{ resourceType.api }}</td>
+          <td class="justify-content-center" style="width: 60px;" title="{{ resourceType.namespaced ? 'Namespaced' : '' }}">
+            <i class="pi"
+              [ngClass]="{ 'pi-id-card': resourceType.namespaced }">
+            </i>
+          </td>
+          <td>{{ resourceType.kind }}</td>
+          <td style="width: 120px;">
+            <div class="flex justify-content-end align-items-center">
+              <button pButton
+                icon="pi pi-info-circle"
+                class="p-button-sm p-button-link"
+                (click)="documentation(resourceType)"
+                title="{{'Documentation of ' + resourceType.name}}">
+              </button>
+              <button pButton
+                icon="pi pi-times"
+                [ngStyle]="{color:'red'}"
+                class="ml-3 p-button-sm p-button-link"
+                (click)="deleteResourceType(resourceType, selectedNamespace, allNamespaces)"
+                title="{{'Delete all ' + resourceType.name}}"
+                [disabled]="allNamespaces">
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="rowexpansion" let-resourceType>
+        <tr>
+          <td style="width: 4rem">&nbsp;</td>
+          <td class="p-0" colspan="6">
+            <p-tabView [attr.style]="'width: 100%;'">
+              <p-tabPanel>
+                <ng-template pTemplate="header">
+                  <div class="flex">
+                    <div>Resources</div>
+                    <p-checkbox
+                      styleClass="ml-5"
+                      [(ngModel)]="resourceType.autoRefresh"
+                      [binary]="true"
+                      label="Auto refresh"
+                      (onChange)="autoRefreshChanged()">
+                    </p-checkbox>
+                  </div>
+                </ng-template>
+                <p-table
+                  [value]="resources"
+                  dataKey="name"
+                  selectionMode="single"
+                  [(selection)]="selectedResource"
+                  styleClass="p-datatable-sm"
+                  responsiveLayout="scroll"
+                  [scrollable]="true"
+                  scrollHeight="flex">
+                  <ng-template pTemplate="emptymessage">
+                    <tr>
+                      <td colspan="3">No Resources of type {{ resourceType.kind }}.</td>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="header">
+                    <tr>
+                        <th  pSortableColumn="name" class="pl-3">Name <p-sortIcon field="name"></p-sortIcon></th>
+                        <th   pSortableColumn="namespace" style="width: 400px;">Namespace <p-sortIcon field="namespace"></p-sortIcon></th>
+                        <th style="width: 120px;">
+                          <div class="flex justify-content-center align-items-center">
+                            <p-toggleButton [onIcon]="'pi pi-filter-slash'" [offIcon]="'pi pi-filter'" [(ngModel)]="resourceType.showFilters"></p-toggleButton>
+                          </div>
+                        </th>
+                    </tr>
+                    <tr *ngIf="resourceType.showFilters">
+                      <th class="pl-3">
+                        <div class="flex justify-content-between align-items-center" style="width: 100%;">
+                          <p-columnFilter type="text" matchMode="contains" field="name" [attr.style]="'width: 100%;'"></p-columnFilter>
+                        </div>
+                      </th>
+                      <th class="pl-3" style="width: 400px;">
+                        <div class="flex justify-content-between align-items-center" style="width: 100%;">
+                          <p-columnFilter type="text" matchMode="contains" field="namespace" [attr.style]="'width: 100%;'"></p-columnFilter>
+                        </div>
+                      </th>
+                      <th style="width: 120px;">&nbsp;</th>
+                    </tr>
+                  </ng-template>
+                  <ng-template pTemplate="body" let-resource>
+                    <tr>
+                      <td class="pl-3">
+                        <div class="flex">
+                          <span title="{{ resource.name + (resourceType.name === 'helmreleases' ? ':' + resource.revision + ' [' + resource.status + ']' : '') }}">
+                          {{ resource.name }}
+                          </span>
+                          <ng-container *ngIf="resourceType.name === 'helmreleases'">
+                            <div class="ml-auto mr-2 flex align-items-center">
+                              <input pInputText class="p-inputtext-sm" type="number" min="1" max="{{ resource.revision }}" [(ngModel)]="resource.selectedRevision0"/>
+                              <button pButton
+                                icon="pi pi-arrows-h"
+                                class="p-button-sm p-button-link ml-3"
+                                title="Compare these two revisions of this release"
+                                (click)="compareSelectedRevisions(resourceType, resource)">
+                              </button>
+                              <input pInputText class="p-inputtext-sm ml-3" type="number" min="1" max="{{ resource.revision }}" [(ngModel)]="resource.selectedRevision"/>
+                              <p-checkbox
+                                styleClass="ml-3"
+                                [(ngModel)]="resource.selectedForCompare"
+                                [binary]="true" title="Select to compare">
+                              </p-checkbox>
+                              <button pButton
+                                icon="pi pi-arrows-v"
+                                class="p-button-sm p-button-link ml-3"
+                                title="Compare selected revisions from different releases"
+                                (click)="compareSelectedReleaseRevisions(resourceType, resources)">
+                              </button>
+                            </div>
+                          </ng-container>
+                          <ng-container *ngIf="resourceType.name === 'namespaces'">
+                            <div class="ml-auto mr-2 flex align-items-center">
+                              <button pButton
+                                icon="pi {{ resource.name === selectedNamespace.name ? 'pi-star-fill' : 'pi-star' }}"
+                                class="p-button-sm p-button-link ml-3"
+                                [style]="resource.name === selectedNamespace.name ? 'color: red;' : ''"
+                                title="Swicth namespace"
+                                [disabled]="resource.name === selectedNamespace.name"
+                                (click)="switchNamespace({value: {name: resource.name, currentNamespace: false}})">
+                              </button>
+                            </div>
+                          </ng-container>
+                        </div>
+                      </td>
+                      <td style="width: 400px;">{{ resource.namespace }}</td>
+                      <td style="width: 120px;">
+                        <div class="flex justify-content-center align-items-center">
+                          <button pButton
+                            icon="pi pi-code"
+                            class="p-button-sm p-button-link"
+                            (click)="loadResource(resourceType, resource)"
+                            title="{{'Load Manifest for ' + resourceType.name + ' ' + resource.name}}">
+                          </button>
+                          <button pButton
+                            icon="pi pi-list"
+                            class="ml-3 p-button-sm p-button-link"
+                            (click)="describeResource(resourceType, resource)"
+                            title="{{'Describe ' + resourceType.name + ' ' + resource.name}}">
+                          </button>
+                          <button pButton
+                            icon="pi pi-times"
+                            [ngStyle]="{color: 'red'}"
+                            class="ml-3 p-button-sm p-button-link"
+                            (click)="deleteResource(resourceType, resource)"
+                            title="{{'Delete ' + resourceType.name + ' ' + resource.name}}">
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </ng-template>
+                </p-table>
+              </p-tabPanel>
+              <p-tabPanel>
+                <ng-template pTemplate="header">
+                  <div class="flex">
+                    <div>Get</div>
+                    <p-checkbox styleClass="ml-5" [(ngModel)]="resourceType.autoRefresh"[binary]="true" label="Auto refresh" (onChange)="autoRefreshChanged()"></p-checkbox>
+                  </div>
+                </ng-template>
+                <textarea
+                  pInputTextarea
+                  name="resourcetype-get"
+                  [(ngModel)]="getOutput"
+                  style="resize: vertical;"
+                  rows="20"
+                  style="width: 100%"
+                  readonly>
+get {{resourceType.name}}
+                </textarea>
+              </p-tabPanel>
+              <p-tabPanel>
+                <ng-template pTemplate="header">
+                  <div class="flex">
+                    <div>Describe all {{ resourceType.name }}</div>
+                  </div>
+                </ng-template>
+                <textarea
+                  pInputTextarea
+                  name="resourcetype-describe"
+                  [(ngModel)]="describeOutput"
+                  style="resize: vertical;"
+                  rows="20"
+                  style="width: 100%"
+                  readonly>
+describe {{resourceType.name}}
+                </textarea>
+              </p-tabPanel>
+            </p-tabView>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </main>
+</div>

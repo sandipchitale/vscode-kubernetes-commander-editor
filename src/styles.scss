@@ -1,0 +1,26 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.k8s-icon{
+  transition: transform 0.2s;
+  &:hover {
+    transform: scale(3);
+    z-index: 1000;
+    transition: transform 0.2s;
+  }
+}
